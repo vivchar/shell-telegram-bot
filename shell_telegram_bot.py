@@ -76,6 +76,10 @@ async def hamster_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
         update
     )
     await process(
+        "git -C HamsterKombatBot/ pull",
+        update
+    )
+    await process(
         "docker run --name hamster -d hamster",
         update
     )
