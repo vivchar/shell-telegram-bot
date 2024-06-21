@@ -29,8 +29,8 @@ async def can_execute(update: Update, command: str) -> bool:
 
 
 async def execute_shell_command(command: str) -> str:
-    process = await asyncio.create_subprocess_shell(command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, text=False)
-    stdout, stderr = await process.communicate()
+    p = await asyncio.create_subprocess_shell(command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, text=False)
+    stdout, stderr = await p.communicate()
     return (stderr.decode('utf-8') + stdout.decode('utf-8'))[:4000]  # message limit
 
 
@@ -39,28 +39,11 @@ async def process(command: str, update: Update):
         return
 
     output = await execute_shell_command(command)
-    await update.message.reply_text("```shell\n" + output + "```", parse_mode='MarkdownV2')
+    await update.message.reply_text("```shell\n~ >>> " + command + "\n\n" + output + "```", parse_mode='MarkdownV2')
 
 
 async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_html(rf"Your USER_ID is <b>{update.effective_user.id}</b>")
-
-
-async def docker_ps(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await process("docker ps", update)
-
-
-async def docker_rm_blum(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await process("docker rm blum", update)
-
-
-async def docker_stop_blum(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await process("docker stop blum", update)
-
-
-async def docker_run_blum(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    command = "docker run --name blum -d -v $(pwd)/clients.json:/BlumBot/clients.json --pull=always ghcr.io/anisovaleksey/blumbot:latest"
-    await process(command, update)
 
 
 async def blum_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -69,11 +52,11 @@ async def blum_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
         update
     )
     await process(
-        "docker rm blum",
+        "docker stop blum",
         update
     )
     await process(
-        "docker stop blum",
+        "docker rm blum",
         update
     )
     await process(
@@ -90,10 +73,6 @@ def main() -> None:
     application = Application.builder().token(enviroment.BOT_TOKEN).build()
 
     application.add_handler(CommandHandler("me", me))
-    application.add_handler(CommandHandler("dockerps", docker_ps))
-    application.add_handler(CommandHandler("dockerrmblum", docker_rm_blum))
-    application.add_handler(CommandHandler("dockerstopblum", docker_stop_blum))
-    application.add_handler(CommandHandler("dockerrunblum", docker_run_blum))
     application.add_handler(CommandHandler("blumrestart", blum_restart))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_commands))
 
