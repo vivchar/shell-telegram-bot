@@ -2,6 +2,7 @@
 # pylint: disable=unused-argument
 import asyncio
 import enviroment
+import subprocess
 
 from telegram import Update
 from telegram.ext import Application, CommandHandler, ContextTypes, MessageHandler, filters
@@ -29,9 +30,24 @@ async def can_execute(update: Update, command: str) -> bool:
 
 
 async def execute_shell_command(command: str) -> str:
+    # loop = asyncio.get_running_loop()
+    # result = await loop.run_in_executor(None, exec2, command)
+    # print("result " + result)
+    # return result
     p = await asyncio.create_subprocess_shell(command, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE, text=False)
     stdout, stderr = await p.communicate()
     return (stderr.decode('utf-8') + stdout.decode('utf-8'))[:4000]  # message limit
+
+
+def exec_test(command: str) -> str:
+    try:
+        # p = subprocess.Popen('/bin/bash', stdin=subprocess.PIPE, stdout=subprocess.PIPE)
+        # out, err = p.communicate(command)
+        # return out
+        result = subprocess.run(command, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True, cwd="..")
+        return result.stdout
+    except subprocess.CalledProcessError as e:
+        return e.stdout
 
 
 async def process(command: str, update: Update):
@@ -44,6 +60,25 @@ async def process(command: str, update: Update):
 
 async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await update.message.reply_html(rf"Your USER_ID is <b>{update.effective_user.id}</b>")
+
+
+async def hamster_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await process(
+        "docker ps",
+        update
+    )
+    await process(
+        "docker stop hamster",
+        update
+    )
+    await process(
+        "docker rm hamster",
+        update
+    )
+    await process(
+        "docker run --name hamster -d hamster",
+        update
+    )
 
 
 async def blum_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -74,6 +109,7 @@ def main() -> None:
 
     application.add_handler(CommandHandler("me", me))
     application.add_handler(CommandHandler("blumrestart", blum_restart))
+    application.add_handler(CommandHandler("hamsterrestart", hamster_restart))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_commands))
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)
@@ -81,6 +117,10 @@ def main() -> None:
 
 if __name__ == "__main__":
     main()
+    # loop = asyncio.new_event_loop()
+    # asyncio.set_event_loop(loop)
+    # loop.run_until_complete(main())
+    # loop.close()
 
 # me - Get my info
 # dockerps - List containers
