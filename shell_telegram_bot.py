@@ -34,7 +34,7 @@ async def execute_shell_command(command: str) -> str:
     return (stderr.decode('utf-8') + stdout.decode('utf-8'))[:4000]  # message limit
 
 
-async def process_command(command: str, update: Update):
+async def process(command: str, update: Update):
     if not await can_execute(update, command):
         return
 
@@ -47,24 +47,43 @@ async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def docker_ps(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await process_command("docker ps", update)
+    await process("docker ps", update)
 
 
 async def docker_rm_blum(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await process_command("docker rm blum", update)
+    await process("docker rm blum", update)
 
 
 async def docker_stop_blum(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await process_command("docker stop blum", update)
+    await process("docker stop blum", update)
 
 
 async def docker_run_blum(update: Update, context: ContextTypes.DEFAULT_TYPE):
     command = "docker run --name blum -d -v $(pwd)/clients.json:/BlumBot/clients.json --pull=always ghcr.io/anisovaleksey/blumbot:latest"
-    await process_command(command, update)
+    await process(command, update)
+
+
+async def blum_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    await process(
+        "docker ps",
+        update
+    )
+    await process(
+        "docker rm blum",
+        update
+    )
+    await process(
+        "docker stop blum",
+        update
+    )
+    await process(
+        "docker run --name blum -d -v $(pwd)/clients.json:/BlumBot/clients.json --pull=always ghcr.io/anisovaleksey/blumbot:latest",
+        update
+    )
 
 
 async def handle_commands(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await process_command(update.message.text, update)
+    await process(update.message.text, update)
 
 
 def main() -> None:
@@ -75,6 +94,7 @@ def main() -> None:
     application.add_handler(CommandHandler("dockerrmblum", docker_rm_blum))
     application.add_handler(CommandHandler("dockerstopblum", docker_stop_blum))
     application.add_handler(CommandHandler("dockerrunblum", docker_run_blum))
+    application.add_handler(CommandHandler("blumrestart", blum_restart))
     application.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, handle_commands))
 
     application.run_polling(allowed_updates=Update.ALL_TYPES)
