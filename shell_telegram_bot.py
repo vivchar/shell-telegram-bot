@@ -64,10 +64,6 @@ async def me(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 async def hamster_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await process(
-        "docker ps",
-        update
-    )
-    await process(
         "docker stop hamster",
         update
     )
@@ -76,7 +72,15 @@ async def hamster_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
         update
     )
     await process(
+        "docker rmi hamster",
+        update
+    )
+    await process(
         "git -C HamsterKombatBot/ pull",
+        update
+    )
+    await process(
+        "docker build -t hamster HamsterKombatBot/",
         update
     )
     await process(
@@ -86,10 +90,6 @@ async def hamster_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 async def blum_restart(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    await process(
-        "docker ps",
-        update
-    )
     await process(
         "docker stop blum",
         update
